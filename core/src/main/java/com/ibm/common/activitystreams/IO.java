@@ -260,6 +260,10 @@ public final class IO {
     this.gson = 
       builder.inner.get();
   }
+  
+  public Schema schema() {
+    return gson.schema();
+  }
  
   /**
    * Write the given object

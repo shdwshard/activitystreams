@@ -200,6 +200,7 @@ public final class GsonWrapper {
   
   private final Gson gson;
   private final String charset;
+  private final Schema schema;
   
   /**
    * Constructor for GsonWrapper.
@@ -210,6 +211,7 @@ public final class GsonWrapper {
       builder.schema != null ? 
         builder.schema : 
         Schema.make().get();
+    this.schema = schema;
     ASObjectAdapter base = 
       new ASObjectAdapter(schema);
     GsonBuilder b = initGsonBuilder(
@@ -221,6 +223,10 @@ public final class GsonWrapper {
       b.setPrettyPrinting();
     this.gson = b.create();
     this.charset = builder.charset;
+  }
+  
+  public Schema schema() {
+    return schema;
   }
   
   /**

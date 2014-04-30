@@ -21,6 +21,7 @@
  */
 package com.ibm.common.activitystreams.internal;
 import java.lang.reflect.Type;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.joda.time.DateTime;
@@ -31,6 +32,7 @@ import org.joda.time.ReadablePeriod;
 import com.google.common.base.Objects;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.ibm.common.activitystreams.ASObject;
 import com.ibm.common.activitystreams.ASObject.AbstractBuilder;
@@ -42,7 +44,8 @@ import com.ibm.common.activitystreams.TypeValue;
  * @author james
  * @version $Revision: 1.0 $
  */
-public final class Model {
+public final class Model
+  implements Iterable<String> {
 
   final String parent;
   final ImmutableMap<String,Type> properties;
@@ -525,5 +528,16 @@ public final class Model {
     for (Map.Entry<String,Class<?>> entry : map.entrySet())
       builder.as(entry.getKey(),entry.getValue());
     return builder.get();
+  }
+
+  @Override
+  public Iterator<String> iterator() {
+    ImmutableSet.Builder<String> list = 
+      ImmutableSet.builder();
+    list.addAll(properties.keySet());
+    Model parent = this.parentPropertyMap();
+    if (parent != null)
+      list.addAll(parent);
+    return list.build().iterator();
   }
 }
