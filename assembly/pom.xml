@@ -3,7 +3,7 @@
   <parent>
     <groupId>com.ibm.common</groupId>
     <artifactId>activitystreams</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.2-SNAPSHOT</version>
   </parent>
   <artifactId>assembly</artifactId>
   <name>Activity Streams 2.0 - Assembly</name>
@@ -12,21 +12,11 @@
     <dependency>
       <groupId>com.ibm.common</groupId>
       <artifactId>activitystreams-core</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>com.ibm.common</groupId>
-      <artifactId>activitystreams-actions</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
+      <version>0.0.2-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.ibm.common</groupId>
       <artifactId>activitystreams-geo</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>com.ibm.common</groupId>
-      <artifactId>activitystreams-legacy</artifactId>
       <version>0.0.1-SNAPSHOT</version>
     </dependency>
   </dependencies>

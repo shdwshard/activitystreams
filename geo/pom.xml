@@ -3,7 +3,7 @@
   <parent>
     <groupId>com.ibm.common</groupId>
     <artifactId>activitystreams</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.2-SNAPSHOT</version>
   </parent>
   <artifactId>activitystreams-geo</artifactId>
   <name>Activity Streams 2.0 - GeoJSON</name>
@@ -79,7 +79,7 @@
             <Export-Package>com.ibm.common.geojson.*</Export-Package>
             <Import-Package>
               com.ibm.common.activitystreams.*,
-              com.google.gson.*,
+              com.github.jsonldjava.*,
               com.google.common.*,
               org.joda.time.*
             </Import-Package>
@@ -134,7 +134,7 @@
     <dependency>
       <groupId>com.ibm.common</groupId>
       <artifactId>activitystreams-core</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
+      <version>0.0.2-SNAPSHOT</version>
     </dependency>
   </dependencies>
   
