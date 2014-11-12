@@ -1,6 +1,7 @@
 package com.ibm.common.activitystreams.geo;
 
 import com.ibm.common.activitystreams.IO.Builder;
+import com.ibm.common.activitystreams.Makers;
 import com.ibm.common.activitystreams.ext.Module;
 
 public final class BasicGeoModule implements Module {
@@ -13,4 +14,7 @@ public final class BasicGeoModule implements Module {
     io.register(BasicGeoPoint.class);    
   }
 
+  public static BasicGeoPoint.Builder geoPoint(Makers makers) {
+    return makers.object(BasicGeoPoint.Builder.class);
+  }
 }

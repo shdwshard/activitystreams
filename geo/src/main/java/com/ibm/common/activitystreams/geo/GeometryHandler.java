@@ -4,20 +4,18 @@ import com.google.common.collect.ImmutableMap;
 import com.ibm.common.activitystreams.ext.InterfaceHandler;
 import com.ibm.common.activitystreams.ext.SimpleInterfaceHandler;
 
-public final class BasicGeoHandler 
+public class GeometryHandler 
   extends SimpleInterfaceHandler
   implements Constants {
 
-  public BasicGeoHandler() {
-    super(BasicGeoPoint.class);
+  protected GeometryHandler() {
+    super(Geometry.class);
   }
 
   @Override
   protected ImmutableMap<String, InterfaceHandler> init() {
     return ImmutableMap.<String,InterfaceHandler>builder()
-      .put("longitude", doublePrimitiveHandler(GEO_LONG))
-      .put("latitude", doublePrimitiveHandler(GEO_LAT))
-      .put("altitude", doublePrimitiveHandler(GEO_ALT))
+      .put("asWKT", stringPrimitiveHandler(GS_ASWKT))
       .build();
   }
 

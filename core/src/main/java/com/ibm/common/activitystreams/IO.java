@@ -94,7 +94,7 @@ public final class IO
       return this; 
     }
     
-    public Builder regiser(Module module) {
+    public Builder register(Module module) {
       module.config(this);
       return this;
     }

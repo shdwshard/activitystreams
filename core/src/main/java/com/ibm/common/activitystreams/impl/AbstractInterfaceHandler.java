@@ -22,8 +22,8 @@ public abstract class AbstractInterfaceHandler
 
   public static double getDouble(Map<String, Object> map, String id) {
     try {
-      String val = getString(map,id);
-      return Double.parseDouble(val);
+      Object val = getValue(map,id);
+      return val instanceof Double ? (Double)val : Double.parseDouble(val.toString());
     } catch (Throwable t) {
       throw Throwables.propagate(t);
     }
@@ -31,8 +31,8 @@ public abstract class AbstractInterfaceHandler
   
   public static float getFloat(Map<String, Object> map, String id) {
     try {
-      String val = getString(map,id);
-      return Float.parseFloat(val);
+      Object val = getValue(map,id);
+      return val instanceof Float ? (Float)val : Float.parseFloat(val.toString());
     } catch (Throwable t) {
       throw Throwables.propagate(t);
     }

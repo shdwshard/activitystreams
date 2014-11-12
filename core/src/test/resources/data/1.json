@@ -15,5 +15,11 @@
   }],
   "published": "2014-12-12T12:34:56Z",
   "duration": "P1Y2M3DT4H",
-  "coordinates": [[1,2],[3,4]]
+  "location" : {
+    "@type" : "geo:Point",
+    "geo:alt" : 1.0,
+    "geo:lat" : 1.0,
+    "geo:long" : 1.0,
+    "displayName" : "A Point"
+  }
 }

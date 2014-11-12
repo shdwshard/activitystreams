@@ -466,6 +466,7 @@
    "HttpRequest": "as:HttpRequest"
   },
   {
+    "geos:asWKT": { "@type": "xsd:string" },
     "geo:alt": {"@type": "xsd:float"},
     "geo:lat": {"@type": "xsd:float"},
     "geo:long": {"@type": "xsd:float"},
