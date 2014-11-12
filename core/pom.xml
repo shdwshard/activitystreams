@@ -30,6 +30,10 @@
 
   <dependencies>
     <dependency>
+      <groupId>com.github.jsonld-java</groupId>
+      <artifactId>jsonld-java</artifactId>
+    </dependency>
+    <dependency>
     	<groupId>com.google.code.gson</groupId>
     	<artifactId>gson</artifactId>
     </dependency>

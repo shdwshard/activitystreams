@@ -1,5 +1,19 @@
 {
-  "verb": "post",
-  "actor": "urn:example:person:joe",
-  "object": "http://example.org/posts/1"
+  "@context": ["http://www.w3.org/ns/activitystreams", "http://schema.org"],
+  "@id": "http://example.org/posts/1",
+  "@type": "vcard:Individual",
+  "actor": ["urn:example:person:joe", "urn:example:person:sally"],
+  "object": "http://example.org/posts/1",
+  "alias": "foo",
+  "width": 1,
+  "displayNameMap": {"en": "test"},
+  "vcard:fn": "test",
+  "items": [{
+    "@type": "as:Link",
+    "href": "urn:example:place",
+    "displayName": "A Place"
+  }],
+  "published": "2014-12-12T12:34:56Z",
+  "duration": "P1Y2M3DT4H",
+  "coordinates": [[1,2],[3,4]]
 }

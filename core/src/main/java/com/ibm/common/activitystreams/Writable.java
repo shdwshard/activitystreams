@@ -23,8 +23,11 @@ package com.ibm.common.activitystreams;
 
 import java.io.OutputStream;
 import java.io.Writer;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+
+import com.ibm.common.activitystreams.IO;
 
 /**
  * Base interface for all objects that serialize to IO object instances
@@ -95,4 +98,5 @@ public interface Writable {
    */
   Future<?> writeTo(Writer out, IO io, ExecutorService executor);
   
+  Map<String,Object> map();
 }

@@ -21,135 +21,103 @@
  */
 package com.ibm.common.activitystreams;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.Iterables.contains;
+import static com.google.common.collect.Maps.newLinkedHashMap;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
-import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.lang.reflect.Proxy;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import com.github.jsonldjava.core.JsonLdOptions;
+import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.base.Supplier;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.ibm.common.activitystreams.internal.Adapter;
-import com.ibm.common.activitystreams.internal.GsonWrapper;
-import com.ibm.common.activitystreams.internal.Schema;
-import com.ibm.common.activitystreams.util.Module;
+import com.google.common.collect.Sets;
+import com.ibm.common.activitystreams.ext.Handler;
+import com.ibm.common.activitystreams.ext.Module;
+import com.ibm.common.activitystreams.ext.Preprocessor;
+import com.ibm.common.activitystreams.impl.RootHandler;
 
-/**
- * The IO object is responsible for serializing and deserializing 
- * Activity Stream objects. Instances of IO should be created and
- * defined statically. IO instances are threadsafe and immutable
- * once created.
- * 
- * <p>You can choose to use one of the default IO instances:</p>
- * 
- * <pre>
- *   public static final IO io = IO.makeDefault();
- *   
- *   public static final IO prettyIo = IO.makeDefaultPrettyPrint();
- * </pre>
- * 
- * <p>Or you can use the IO.Builder to construct and configure your
- * own IO instance with custom adapters, object properties and 
- * type mappings:</p>
- * 
- * <pre>
- *   import static 
- * 
- *   public static final IO io = 
- *   IO.make()
- *     .schema(
- *       Makers.makeSchema().map(
- *         Schema.object.template()
- *           .as("foo", Foo.class)))
- *     .adapter(Foo.class, new MyFooAdapter())
- *     .get();
- * </pre>
- * 
- * <p>Once created, you can use IO instances to parse Activity Streams
- * documents:</p>
- * 
- * <pre>
- *  InputStream in = ...
- *  Activity activity = io.readAsActivity(in);
- * </pre>
- * 
- * <p>Or can use the IO instance to serialize:</p>
- * 
- * <pre>
- *   OutputStream out = ...
- *   Activity activity = ...
- *   activity.writeTo(out, io);
- * </pre>
- * 
- * @author james
- * @version $Revision: 1.0 $
- */
-public final class IO {
-  
+public final class IO
+  implements Constants {
+    
   /**
    * Create a new IO.Builder
-   * @return Builder */
+   * @return Builder 
+   */
   public static Builder make() {
     return new Builder();
   }
-  
-  /**
-   * Create a new IO.Builder that uses the given schema
-   * @param schema Schema
-   * @return IO
-   */
-  public static IO makeWithSchema(Schema schema) {
-    return make().schema(schema).get();
-  }
-  
-  /**
-   * Create a new IO.Builder that uses the given schema
-   * @param schema Supplier<? extends Schema>
-   * @return IO
-   */
-  public static IO makeWithSchema(Supplier<? extends Schema> schema) {
-    return makeWithSchema(schema.get());
-  }
-  
-  /**
-   * Make or return the default IO instance
-   * @return IO 
-   **/
-  public static IO makeDefault(Module... modules) {
-    IO.Builder builder = make();
-    if (modules != null)
-      for (Module mod : modules)
-        builder.using(mod);
-    return builder.get();
-  }
-  
-  /**
-   * Make or return a default IO instance with Pretty Print enabled
-   * @return IO
-   */
-  public static IO makeDefaultPrettyPrint(Module... modules) {
-    IO.Builder builder = make().prettyPrint();
-    if (modules != null)
-      for (Module mod : modules)
-        builder.using(mod);
-    return builder.get();
-  }
-  
+      
   public static class Builder 
     implements Supplier<IO> {
-
-    private final GsonWrapper.Builder inner = 
-      GsonWrapper.make();
-    private Schema schema;
-    private final ImmutableSet.Builder<Module> modules = 
-      ImmutableSet.builder();
     
-    public Builder using(Module module) {
-      modules.add(module);
+    private final Set<Preprocessor> preprocessors = Sets.newLinkedHashSet();
+    private final Set<Object> context = Sets.newLinkedHashSet();
+    private final Map<String,Class<?>> typeMap = 
+      newLinkedHashMap();
+    private boolean prettyPrint = false;
+    private final JsonLdOptions options = 
+      new JsonLdOptions();
+    
+    Builder() {
+      options.setCompactArrays(true);
+      context.add("http://www.w3.org/ns/activitystreams");
+    }
+    
+    public Builder addPreprocessor(Preprocessor preprocessor) {
+      preprocessors.add(preprocessor);
+      return this;
+    }
+    
+    public Builder addContext(String uri) {
+      context.add(uri);
+      return this;
+    }
+    
+    public Builder addContext(Map<String,Object> context) {
+      this.context.add(context);
+      return this; 
+    }
+    
+    public Builder regiser(Module module) {
+      module.config(this);
+      return this;
+    }
+    
+    public Builder register(Class<?> _class) {
+      if (_class.isAnnotationPresent(Handler.class)) {
+        Handler handler = _class.getAnnotation(Handler.class);
+        if (!"".equals(handler.id()))
+          return register(handler.id(), _class);
+      }
+      throw new IllegalArgumentException();
+    }
+    
+    public Builder register(String id, Class<?> _class) {
+      if (id.startsWith(NS) || 
+          !_class.isInterface())
+        throw new IllegalArgumentException();
+      typeMap.put(id, _class);
+      return this;
+    }
+    
+    public Builder base(String uri) {
+      options.setBase(uri);
       return this;
     }
     
@@ -159,7 +127,7 @@ public final class IO {
      * @return Builder 
      **/
     public Builder prettyPrint(boolean on) {
-      inner.prettyPrint(on);
+      this.prettyPrint = on;
       return this;
     }
     
@@ -171,94 +139,25 @@ public final class IO {
       return prettyPrint(true);
     }
     
-    /**
-     * Add an adapter
-     * @param type Class<? extends T>
-     * @param adapter Adapter<T>
-     * @return Builder 
-     **/
-    public <T>Builder adapter(
-      Class<? extends T> type, 
-      Adapter<T> adapter) {
-      inner.adapter(type, adapter);
-      return this;
-    }
-    
-    /** 
-     * Add an adapter
-     * @param type Class&lt;? extends T>
-     * @return Builder
-     */
-    public <T>Builder adapter(
-      Class<? extends T> type) {
-      return adapter(type,null);
-    }
-    
-    /** 
-     * Add an adapter
-     * @param type Class&lt;? extends T>
-     * @return Builder
-     */
-    public <T>Builder hierarchicalAdapter(
-      Class<? extends T> type) {
-      return hierarchicalAdapter(type,null);
-    }
-    
-    /**
-     * Add an adapter.
-     * @param type Class<? extends T>
-     * @param adapter Adapter<T>
-     * @param hier boolean
-     * @return Builder 
-     **/
-    public <T>Builder hierarchicalAdapter(
-      Class<? extends T> type, 
-      Adapter<T> adapter) {
-      inner.adapter(type, adapter, true);
-      return this;
-    }
-    
-    /**
-     * Set the schema
-     * @param schema Schema
-     * @return Builder 
-     **/
-    public Builder schema(Schema schema) {
-      //inner.schema(schema);
-      this.schema = schema;
-      return this;
-    }
-    
-    /**
-     * Set the schema.
-     * @param schema Supplier<Schema>
-     * @return Builder 
-     **/
-    public Builder schema(Supplier<Schema> schema) {
-      return schema(schema.get());
-    }
-    
     public IO get() {
-      Iterable<Module> mods = modules.build();
-      Schema schema = this.schema;
-      if (schema == null) {
-        Schema.Builder builder = Schema.make();
-        for (Module mod : mods) 
-          mod.apply(builder);
-        schema = builder.get();
-      }
-      inner.schema(schema);
-      for (Module module : modules.build())
-        module.apply(this, schema);
       return new IO(this);
     }
   }
   
-  private final GsonWrapper gson;
+  private final boolean prettyPrint;
+  private final JsonLdOptions options;
+  private final ImmutableMap<String,Class<?>> typeMap;
+  private final ImmutableMap<String,Object> context;
+  private final ImmutableList<Preprocessor> preprocessors;
   
   protected IO(Builder builder) {
-    this.gson = 
-      builder.inner.get();
+    this.context = ImmutableMap.<String,Object>builder().put(
+      "@context", ImmutableList.copyOf(builder.context)).build();
+    this.prettyPrint = builder.prettyPrint;
+    this.options = builder.options;
+    this.options.setExpandContext(context);
+    this.typeMap = ImmutableMap.copyOf(builder.typeMap);
+    this.preprocessors = ImmutableList.copyOf(builder.preprocessors);
   }
  
   /**
@@ -296,7 +195,17 @@ public final class IO {
    * @param out OutputStream
    */
   public void write(Writable w, OutputStream out) {
-    gson.write(w,out);
+    try {
+      Map<String,Object> object = 
+        JsonLdProcessor.compact(w.map(), context, options);
+      object.put("@context", context.get("@context"));
+      String ser = prettyPrint ?
+        JsonUtils.toPrettyString(object) : 
+        JsonUtils.toString(object);
+      out.write(ser.getBytes("UTF-8"));
+    } catch (Throwable t) {
+      throw Throwables.propagate(t);
+    }
   }
   
   /**
@@ -345,7 +254,17 @@ public final class IO {
    * @param out Writer
    */
   public void write(Writable w, Writer out) {
-    gson.write(w,out);
+    try {
+      Map<String,Object> object = 
+        JsonLdProcessor.compact(w.map(), context, options);
+      object.put("@context", context.get("@context"));
+      String ser = prettyPrint ?
+        JsonUtils.toPrettyString(object) : 
+        JsonUtils.toString(object);
+      out.write(ser);
+    } catch (Throwable t) {
+      throw Throwables.propagate(t);
+    }
   }
   
   /**
@@ -356,14 +275,13 @@ public final class IO {
    * @param executor
    * @return java.util.concurrent.Future&lt;A extends ASObject>
    */
-  public <A extends ASObject>Future<A> readAs(
+  public Future<Base> read(
     final InputStream in,
-    final Class<? extends A> type,
     ExecutorService executor) {
       return executor.submit(
-        new Callable<A>() {
-          public A call() throws Exception {
-            return readAs(in, type);
+        new Callable<Base>() {
+          public Base call() throws Exception {
+            return read(in);
           }          
         }
       );
@@ -375,10 +293,16 @@ public final class IO {
    * @param in InputStream
    * @param type Class<? extends A>
    * @return A */
-  public <A extends ASObject>A readAs(
-    InputStream in, 
-    Class<? extends A> type) {
-      return gson.<A>readAs(in, type);
+  @SuppressWarnings("unchecked")
+  public Base read(
+    InputStream in) {
+    try {
+      Map<String,Object> map = 
+        (Map<String, Object>) JsonUtils.fromInputStream(in);
+      return doRead(map);
+    } catch (Throwable e) {
+      throw Throwables.propagate(e);
+    }
   }
   
   /**
@@ -389,14 +313,13 @@ public final class IO {
    * @param executor
    * @return java.util.concurrent.Future&lt;A extends ASObject>
    */
-  public <A extends ASObject>Future<A> readAs(
+  public Future<Base> read(
     final Reader in,
-    final Class<? extends A> type,
     ExecutorService executor) {
       return executor.submit(
-        new Callable<A>() {
-          public A call() throws Exception {
-            return readAs(in, type);
+        new Callable<Base>() {
+          public Base call() throws Exception {
+            return read(in);
           }          
         }
       );
@@ -407,223 +330,75 @@ public final class IO {
    * @param in Reader
    * @param type Class<? extends A>
    * @return A */
-  public <A extends ASObject>A readAs(
-    Reader in, 
-    Class<? extends A> type) {
-      return gson.<A>readAs(in, type);
-  }
-  
-  /**
-   * Asynchronously read the given string and return a parsed object of 
-   * the given type
-   * @param in
-   * @param type
-   * @param executor
-   * @return java.util.concurrent.Future&lt;A extends ASObject>
-   */
-  public <A extends ASObject>Future<A> readAs(
-    final String in,
-    final Class<? extends A> type,
-    ExecutorService executor) {
-      return executor.submit(
-        new Callable<A>() {
-          public A call() throws Exception {
-            return readAs(in, type);
-          }          
-        }
-      );
-  }
-  
-  /**
-   * Read the given string and return a parsed object of the given type
-   * @param in String
-   * @param type Class<? extends A>
-   * @return A
-   */
-  public <A extends ASObject>A readAs(
-    String in,
-    Class<? extends A> type) {
-      return readAs(new StringReader(in),type);
-  }
-  
-  /**
-   * Asynchronously read the given string 
-   * @param in
-   * @param executor
-   * @return java.util.concurrent.Future&lt;ASObject>
-   */
-  public Future<ASObject> read(String in, ExecutorService executor) {
-    return read(new StringReader(in), executor);
-  }
-  
-  /**
-   * Read the given string
-   * @param in String
-   * @return ASObject
-   */
-  public ASObject read(String in) {
-    return read(new StringReader(in));
-  }
-  
-  /**
-   * Asynchronously read the given inputstream
-   * @param in
-   * @param executor
-   * @return java.util.concurrent.Future&lt;ASObject>
-   */
-  public Future<ASObject> read(InputStream in, ExecutorService executor) {
-    return readAs(in, ASObject.class, executor);
-  }
-  
-  /**
-   * Asynchronously read the given reader
-   * @param in
-   * @param executor
-   * @return java.util.concurrent.Future&lt;ASObject>
-   */
-  public Future<ASObject> read(Reader in, ExecutorService executor) {
-    return readAs(in, ASObject.class, executor);
-  }
-  
-  /**
-   * Read the given input stream.
-   * @param in InputStream
-   * @return ASObject 
-   **/
-  public ASObject read(InputStream in) {
-    return readAs(in, ASObject.class);
-  }
-  
-  /**
-   * Return the given input stream
-   * @param in InputStream
-   * @return A
-   */
   @SuppressWarnings("unchecked")
-  public <A extends ASObject>A readAs(InputStream in) {
-    return (A)read(in);
+  public Base read(
+    Reader in) {
+      try {
+        Map<String,Object> map = 
+          (Map<String, Object>) JsonUtils.fromReader(in);
+        return doRead(map);
+      } catch (Throwable e) {
+        throw Throwables.propagate(e);
+      }
   }
   
-  /**
-   * Read the given string as an Activity object
-   * @param in String
-   * @return Activity
-   */
-  public Activity readAsActivity(String in) {
-    return readAsActivity(new StringReader(in));
+  @SuppressWarnings("unchecked")
+  public Base doRead(Map<String,Object> map) {
+    try {
+      for (Preprocessor p : preprocessors) 
+        map = p.apply(map);
+      List<Object> obj = JsonLdProcessor.expand(map, options);
+      checkArgument(obj.size() == 1);
+      return wrap((Map<String,Object>)obj.get(0));
+    } catch (Throwable e) {
+      throw Throwables.propagate(e);
+    }
   }
   
-  /**
-   * Asynchronously read the given string as an Activity object
-   * @param in
-   * @param executor
-   * @return java.util.concurrent.Future&lt;Activity>
-   */
-  public Future<Activity> readAsActivity(String in, ExecutorService executor) {
-    return readAsActivity(new StringReader(in), executor);
+  public Base wrap(Map<String,Object> map) {
+    return wrap(map,false);
   }
   
-  /**
-   * Asynchronously read the given inputstream as an Activity object
-   * @param in
-   * @param executor
-   * @return java.util.concurrent.Future&lt;Activity>
-   */
-  public Future<Activity> readAsActivity(InputStream in, ExecutorService executor) {
-    return readAs(in, Activity.class, executor);
+  public Base wrap(Map<String,Object> map, boolean isALink) {
+    RootHandler handler = new RootHandler(this,map);
+    ClassLoader cl = Base.class.getClassLoader();
+    return (Base)Proxy.newProxyInstance(
+      cl, determine_interfaces(map, isALink), handler);
   }
   
-  /**
-   * Asynchronously read the given reader as an Activity object
-   * @param in
-   * @param executor
-   * @return java.util.concurrent.Future&lt;Activity>
-   */
-  public Future<Activity> readAsActivity(Reader in, ExecutorService executor) {
-    return readAs(in, Activity.class, executor);
+  @SuppressWarnings("unchecked")
+  private Class<?>[] determine_interfaces(Map<String,Object> map, boolean isALink) {
+    Iterable<String> types = (Iterable<String>) map.get("@type");
+    if (types == null)
+      types = ImmutableSet.of();
+    ImmutableSet.Builder<Class<?>> set = ImmutableSet.builder();
+    set.add(Base.class);
+    if (isALink || contains(types, TYPE_LINK)) {
+      set.add(Link.class);
+      isALink = true;
+    } else { 
+      set.add(ASObject.class);
+      if (contains(types, TYPE_COLLECTION) || 
+          map.containsKey(ITEMS))
+        set.add(Collection.class);
+      if (contains(types, TYPE_ACTIVITY) || 
+          map.containsKey(ACTOR) || map.containsKey(OBJECT))
+        set.add(Activity.class);
+    }
+    for (String type : types) {
+      Class<?> _class = typeMap.get(type);
+      if (_class != null) {
+        if ((isALink && !ASObject.class.isAssignableFrom(_class)) || 
+            (!isALink && !Link.class.isAssignableFrom(_class)))
+          set.add(_class);
+      }
+    }
+    
+    ImmutableSet<Class<?>> _set = set.build();
+    return _set.toArray(new Class[_set.size()]);
   }
   
-  /**
-   * Asynchronously read the given string as a Collection object
-   * @param in
-   * @param executor
-   * @return java.util.concurrent.Future&lt;Collection>
-   */
-  public Future<Collection> readAsCollection(String in, ExecutorService executor) {
-    return readAsCollection(new StringReader(in), executor);
-  }
-  
-  /**
-   * Asynchronously read the given input stream as a Collection object
-   * @param in
-   * @param executor
-   * @return java.util.concurrent.Future&lt;Collection>
-   */
-  public Future<Collection> readAsCollection(InputStream in, ExecutorService executor) {
-    return readAs(in, Collection.class, executor);
-  }
-  
-  /**
-   * Asynchronously read the given reader as a Collection object
-   * @param in
-   * @param executor
-   * @return java.util.concurrent.Future&lt;Collection>
-   */
-  public Future<Collection> readAsCollection(Reader in, ExecutorService executor) {
-    return readAs(in, Collection.class, executor);
-  }
-  
-  /**
-   * Read the given inputstream as an Activity.
-   * @param in InputStream
-   * @return Activity 
-   **/
-  public Activity readAsActivity(InputStream in) {
-    return readAs(in, Activity.class);
-  }
-  
-  /**
-   * Read the given string as a Collection.
-   * @param in InputStream
-   * @return Collection 
-   **/
-  public Collection readAsCollection(String in) {
-    return readAsCollection(new StringReader(in));
-  }
-  
-  /**
-   * Read the given inputstream as a Collection.
-   * @param in InputStream
-   * @return Collection 
-   **/
-  public Collection readAsCollection(InputStream in) {
-    return readAs(in, Collection.class);
-  }
-  
-  /**
-   * Read the given reader
-   * @param in
-   * @return ASObject
-   */
-  public ASObject read(Reader in) {
-    return readAs(in, ASObject.class);
-  }
-  
-  /**
-   * Read the given reader as an Activity
-   * @param in Reader
-   * @return Activity 
-   **/
-  public Activity readAsActivity(Reader in) {
-    return readAs(in, Activity.class);
-  }
-  
-  /**
-   * Read the given reader as a Collection
-   * @param in Reader
-   * @return Collection 
-   **/
-  public Collection readAsCollection(Reader in) {
-    return readAs(in, Collection.class);
+  public Makers makers() {
+    return new Makers(this);
   }
 }

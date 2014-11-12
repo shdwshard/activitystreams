@@ -1,0 +1,7 @@
+[
+  {
+    "Content-Location": "http://www.w3.org/ns/activitystreams",
+    "X-Classpath": "contexts/activitystreams2-context.jsonld",
+    "Content-Type": "application/ld+json"
+  }
+]
