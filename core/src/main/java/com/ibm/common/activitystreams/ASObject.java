@@ -1469,14 +1469,14 @@ public class ASObject
      * @param value Supplier<V>
      * @return B 
      **/
-    public B set(String key, Supplier<?> value) {
+    /*public B set(String key, Supplier<?> value) {
       try {
         return value == null ?
           (B)this : set(key,value.get());
       } catch (Throwable t) {
         throw propagate(t);
       }
-    }
+    }*/
     
     /**
      * Set a property from a given callable
@@ -1484,7 +1484,7 @@ public class ASObject
      * @param value Callable<V>
      * @return B 
      **/
-    public B set(String key, Callable<?> value) {
+    /*public B set(String key, Callable<?> value) {
       try {
         return value == null ?
           (B)this : 
@@ -1492,7 +1492,7 @@ public class ASObject
       } catch (Throwable t) {
         throw propagate(t);
       }
-    }
+    }*/
     
     /**
      * Set the scope
