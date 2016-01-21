@@ -1,0 +1,5 @@
+
+description = 'Activity Streams 2.0 - GeoJSON'
+dependencies {
+  compile project(':activitystreams-core')
+}

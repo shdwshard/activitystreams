@@ -1,0 +1,5 @@
+
+description = 'Activity Streams 2.0 - Legacy objectTypes'
+dependencies {
+  compile project(':activitystreams-core')
+}

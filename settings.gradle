@@ -1,0 +1,14 @@
+rootProject.name = 'activitystreams'
+include ':activitystreams-core'
+include ':activitystreams-actions'
+include ':activitystreams-geo'
+include ':assembly'
+include ':activitystreams-legacy'
+include ':activitystreams-ext'
+
+project(':activitystreams-core').projectDir = "$rootDir/core" as File
+project(':activitystreams-actions').projectDir = "$rootDir/actions" as File
+project(':activitystreams-geo').projectDir = "$rootDir/geo" as File
+project(':assembly').projectDir = "$rootDir/assembly" as File
+project(':activitystreams-legacy').projectDir = "$rootDir/legacy" as File
+project(':activitystreams-ext').projectDir = "$rootDir/typext" as File
