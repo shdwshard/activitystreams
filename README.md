@@ -2,20 +2,16 @@
 
 ## Getting Started
 
-Maven:
+Gradle:
 
-Use Maven to build.
+Use gradle to build.
 
-- mvn compile
-- mvn install 
-- mvn -f assembly assembly:assembly
+- ./gradlew clean assemble
 
-```xml
-<dependency>
-  <groupId>com.ibm.common</groupId>
-  <artifactId>activitystreams</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-</dependency>
+```groovy
+dependencies {
+  implmentation group: 'com.ibm.common', name: 'activitystreams', version: '0.0.1-SNAPSHOT'
+}
 ```
 
 Dependencies:
@@ -276,22 +272,10 @@ You can register multiple modules when the IO object is created:
 
 Each of the modules is provided as separate Maven artifacts.:
 
-```xml
-  <dependency>
-    <groupId>com.ibm.common</groupId>
-    <artifactId>activitystreams-actions</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-  </dependency>
-  
-  <dependency>
-    <groupId>com.ibm.common</groupId>
-    <artifactId>activitystreams-geo</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-  </dependency>
-  
-  <dependency>
-    <groupId>com.ibm.common</groupId>
-    <artifactId>activitystreams-legacy</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-  </dependency>
+```groovy
+dependencies {
+  implmentation group: 'com.ibm.common', name: 'activitystreams-actions', version: '0.0.1-SNAPSHOT'
+  implmentation group: 'com.ibm.common', name: 'activitystreams-geo', version: '0.0.1-SNAPSHOT'
+  implmentation group: 'com.ibm.common', name: 'activitystreams-legacy', version: '0.0.1-SNAPSHOT'
+}
 ```
